@@ -29,10 +29,10 @@ RUN opkg update && \
     if ! opkg list-installed | grep -q kmod-tun; then opkg install kmod-tun || true; fi && \
     rm -rf /var/opkg-lists
 
-COPY gost_3.2.6_linux_arm64.tar.gz /tmp/
-RUN tar -zxvf /tmp/gost_3.2.6_linux_arm64.tar.gz -C /usr/bin/ gost \
-    && chmod +x /usr/bin/gost \
-    && rm /tmp/gost_3.2.6_linux_amd64.tar.gz
+RUN wget --no-check-certificate "https://github.com/go-gost/gost/releases/download/v3.2.6/gost_3.2.6_linux_arm64.tar.gz" -O /tmp/gost.tar.gz && \
+    tar -zxvf /tmp/gost.tar.gz -C /usr/bin/ gost && \
+    chmod +x /usr/bin/gost && \
+    rm /tmp/gost.tar.gz
 
 COPY ux_prepare /etc/init.d/ux_prepare
 RUN chmod +x /etc/init.d/ux_prepare \
