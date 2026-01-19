@@ -1,4 +1,4 @@
-FROM openwrt/rootfs:v21.02.5
+FROM openwrt/rootfs:21.02.5
 
 ENV GOSTAPI="18080"
 ENV UU_LAN_IPADDR=
