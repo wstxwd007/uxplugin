@@ -12,19 +12,20 @@ USER root
 ARG TARGETARCH
 
 RUN mkdir -p /var/lock && \
-    # 1. 架构源修复 (保持 arm64 兼容)
+    # 1. 架构源修复 & 注入架构权限
     if [ "$TARGETARCH" = "arm64" ]; then \
         sed -i 's/x86\/64/armvirt\/64/g' /etc/opkg/distfeeds.conf && \
-        sed -i 's/x86_64/aarch64_generic/g' /etc/opkg/distfeeds.conf; \
+        sed -i 's/x86_64/aarch64_generic/g' /etc/opkg/distfeeds.conf && \
+        # 关键：告诉 opkg 允许安装 aarch64 的包
+        echo "arch aarch64_generic 10" >> /etc/opkg.conf; \
     fi && \
     \
-    # 2. 暂时降级为 http 以便在没有 SSL 库时也能安装包
+    # 2. 降级 http 以绕过 SSL 校验
     sed -i 's/https/http/g' /etc/opkg/distfeeds.conf && \
     opkg update && \
     \
-    # 3. 只安装最核心的依赖，不强求替换 openssl
-    # 安装 wget-ssl 会自动处理它需要的依赖
-    opkg install wget-ssl kmod-tun || true && \
+    # 3. 安装依赖 (使用 --force-overwrite 确保万无一失)
+    opkg install wget-ssl kmod-tun --force-overwrite || true && \
     rm -rf /var/opkg-lists
 
 # 4. 下载 GOST
