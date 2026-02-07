@@ -24,31 +24,40 @@ config interface 'lan'
   uci commit dhcp
   /etc/init.d/dnsmasq restart
 
-  # --- 优化后的安装与启动逻辑：从这里开始 ---
+  # --- 优化后的安装与启动逻辑 ---
 
-  # 1. 启动 GOST v3 API (优先启动，不影响后续安装)
+  # 1. 启动 GOST v3 API
   if [ -x "/usr/bin/gost" ]; then
-      /usr/bin/gost -api  :"$GOSTAPI" >/dev/null 2>&1 &
+      # 增加 killall 防止重复启动
+      killall gost >/dev/null 2>&1
+      /usr/bin/gost -api :"$GOSTAPI" >/dev/null 2>&1 &
   fi
 
   # 2. 网易 UU：增加持久化检测
-  # 如果检测到 monitor 脚本已存在，说明已经安装过，直接运行；否则下载安装
   if [ ! -f "/usr/sbin/uu/uuplugin_monitor.sh" ]; then
-      wget https://uurouter.gdl.netease.com/uuplugin-script/openwrt/v1/install.sh -O /root/uuinstall.sh
-      /bin/sh /root/uuinstall.sh openwrt $(uname -m)
+      # 放在括号里后台运行，防止安装过程卡住后面的奇游逻辑
+      (
+        wget -q https://uurouter.gdl.netease.com/uuplugin-script/openwrt/v1/install.sh -O /tmp/uuinstall.sh
+        [ -s /tmp/uuinstall.sh ] && /bin/sh /tmp/uuinstall.sh openwrt $(uname -m)
+      ) &
   else
       /usr/sbin/uu/uuplugin_monitor.sh &
   fi
-
-  # 3. 迅游：增加持久化检测
-  # 检测守护脚本是否存在，不存在则下载安装
-  if [ ! -f "/xunyou/xunyou_daemon.sh" ]; then
-      wget http://partnerdownload.xunyou.com/routerplugin/install.sh -O /root/xyinstall.sh
-      /bin/sh /root/xyinstall.sh openwrt $(uname -m)
+  
+  # 3. 奇游持久化检测
+  if [ ! -f "/etc/qy/qy_acc.sh" ]; then
+      # 异步执行安装，确保整个 start 流程快速结束
+      (
+        wget -q http://static.qiyou.cn/upgrade/ljb/plugin/qyplug.sh -O /tmp/qyplug.sh && \
+        sh /tmp/qyplug.sh start
+      ) &
   else
-      # 迅游安装后通常通过守护脚本拉起
-      /bin/sh /xunyou/xunyou_daemon.sh simple &
+      /etc/qy/qy_acc.sh start &
   fi
+}
+
+stop() {
+  killall gost uuplugin qy_acc 2>/dev/null
 }
 
 
