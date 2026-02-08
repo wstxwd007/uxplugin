@@ -33,24 +33,19 @@ config interface 'lan'
       /usr/bin/gost -api :"$GOSTAPI" >/dev/null 2>&1 &
   fi
 
+
   # 2. 网易 UU：增加持久化检测
+  # 如果检测到 monitor 脚本已存在，说明已经安装过，直接运行；否则下载安装
   if [ ! -f "/usr/sbin/uu/uuplugin_monitor.sh" ]; then
-      # 放在括号里后台运行，防止安装过程卡住后面的奇游逻辑
-      (
-        wget -q https://uurouter.gdl.netease.com/uuplugin-script/openwrt/v1/install.sh -O /tmp/uuinstall.sh
-        [ -s /tmp/uuinstall.sh ] && /bin/sh /tmp/uuinstall.sh openwrt $(uname -m)
-      ) &
+      wget https://uurouter.gdl.netease.com/uuplugin-script/openwrt/v1/install.sh -O /tmp/uuinstall.sh
+      /bin/sh /tmp/uuinstall.sh openwrt $(uname -m)
   else
       /usr/sbin/uu/uuplugin_monitor.sh &
   fi
   
   # 3. 奇游持久化检测
   if [ ! -f "/etc/qy/qy_acc.sh" ]; then
-      # 异步执行安装，确保整个 start 流程快速结束
-      (
-        wget -q http://static.qiyou.cn/upgrade/ljb/plugin/qyplug.sh -O /tmp/qyplug.sh && \
-        sh /tmp/qyplug.sh start
-      ) &
+      wget http://static.qiyou.cn/upgrade/ljb/plugin/qyplug.sh -O /tmp/qyplug.sh && sh /tmp/qyplug.sh
   else
       /etc/qy/qy_acc.sh start &
   fi
