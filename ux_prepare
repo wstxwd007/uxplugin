@@ -44,11 +44,16 @@ config interface 'lan'
   fi
   
   # 3. 奇游持久化检测
-  if [ ! -f "/etc/qy/qy_acc.sh" ]; then
-      wget http://static.qiyou.cn/upgrade/ljb/plugin/qyplug.sh -O /tmp/qyplug.sh && sh /tmp/qyplug.sh
-  else
-      /etc/qy/qy_acc.sh start &
-  fi
+if [ ! -f "/etc/qy/qy_acc.sh" ]; then
+    # 如果文件不存在，下载并执行安装
+    wget http://static.qiyou.cn/upgrade/ljb/plugin/qyplug.sh -O /tmp/qyplug.sh && sh /tmp/qyplug.sh
+else
+    # 如果文件存在，先用 sed 修正其中的 curl 下载指令
+    sed -i 's/get_qyplug="curl -s -k -L -m 30 \\"${url}\\" -o \\"${sh_file}\\""/get_qyplug="wget --no-check-certificate -T 30 \\"${url}\\" -O \\"${sh_file}\\""/' /etc/qy/qy_acc.sh
+    
+    # 然后启动加速器
+    /etc/qy/qy_acc.sh start &
+fi
 }
 
 stop() {
